@@ -114,6 +114,8 @@ const RUTINA = [
       { nombre: "Abductores",          series: 2, reps: "10-12", descanso: "2-3 min", calent: 1 },
       { nombre: "Ext. cuádriceps",     series: 2, reps: "8-10",  descanso: "2-3 min", calent: 1 },
       { nombre: "Abdomen",             series: 2, reps: "8-10",  descanso: "2-3 min", calent: 1 },
+      { nombre: "Curl de muñeca",          series: 2, reps: "12-15", descanso: "1-2 min", calent: 0 },
+      { nombre: "Curl de muñeca invertido",series: 2, reps: "12-15", descanso: "1-2 min", calent: 0 },
     ]
   },
   { nombre: "DÍA 3 — TIRÓN", color: "#1A6FB5",
@@ -134,6 +136,7 @@ const RUTINA = [
       { nombre: "Abductores",          series: 2, reps: "10-12", descanso: "2-3 min", calent: 1 },
       { nombre: "Leg curl",            series: 2, reps: "8-10",  descanso: "2-3 min", calent: 1 },
       { nombre: "Abdominales",         series: 2, reps: "8-10",  descanso: "2-3 min", calent: 1 },
+      { nombre: "Curl martillo",       series: 2, reps: "10-12", descanso: "1-2 min", calent: 0 },
     ]
   },
 ];
@@ -163,13 +166,25 @@ function cargarSesiones() {
   if (guardado) {
     try {
       const parsed = JSON.parse(guardado);
-      // Verificar que la estructura coincide con la rutina actual
       if (Array.isArray(parsed) && parsed.length === RUTINA.length) {
-        // Migración: si sesiones viejas no tienen "maquina", se le agrega
-        parsed.forEach(dia => dia.forEach(ej => {
-          if (!ej.maquina) ej.maquina = ej.checks.map(() => false);
-        }));
-        return parsed;
+        // Migración: completar ejercicios nuevos que no existían al guardar, y agregar "maquina" si falta
+        return parsed.map((diaGuardado, di) => {
+          const diaRutina = RUTINA[di];
+          return diaRutina.ejercicios.map((ej, ei) => {
+            const existente = diaGuardado[ei];
+            if (existente && existente.pesos && existente.pesos.length === ej.series) {
+              if (!existente.maquina) existente.maquina = existente.checks.map(() => false);
+              return existente;
+            }
+            // Ejercicio nuevo o con distinto número de series: se inicializa vacío
+            return {
+              pesos:   Array(ej.series).fill(''),
+              reps:    Array(ej.series).fill(''),
+              checks:  Array(ej.series).fill(false),
+              maquina: Array(ej.series).fill(false),
+            };
+          });
+        });
       }
     } catch(e) {}
   }
